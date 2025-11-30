@@ -2,7 +2,6 @@
 session_start();
 include 'db.php';
 
-// Giriş yapılmamışsa login sayfasına at
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
@@ -11,13 +10,41 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $full_name = $_SESSION['user_name'] ?? 'Kullanıcı';
 
-// 1. Kullanıcının kitaplarını çek
+// BİLDİRİM & GÖRÜLDÜ YAPMA
+$sqlCount = "SELECT COUNT(*) FROM offers WHERE receiver_id = ? AND is_seen = 0";
+$stmtCount = $conn->prepare($sqlCount);
+$stmtCount->execute([$user_id]);
+$newOfferCount = $stmtCount->fetchColumn();
+
+if ($newOfferCount > 0) {
+    $sqlUpdate = "UPDATE offers SET is_seen = 1 WHERE receiver_id = ?";
+    $stmtUpdate = $conn->prepare($sqlUpdate);
+    $stmtUpdate->execute([$user_id]);
+}
+
+// KULLANICI BİLGİSİ
+$sqlUser = "SELECT * FROM users WHERE id = ?";
+$stmtUser = $conn->prepare($sqlUser);
+$stmtUser->execute([$user_id]);
+$currentUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+$profilePic = !empty($currentUser['profile_pic']) ? $currentUser['profile_pic'] : 'https://via.placeholder.com/150?text=Profil';
+
+// SORGULAR (Kitaplarım, Gelen, Giden)
 $sql = "SELECT * FROM books WHERE user_id = ? ORDER BY id DESC";
 $stmt = $conn->prepare($sql);
 $stmt->execute([$user_id]);
 $myBooks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Kitap sayısı
+$sqlIncoming = "SELECT offers.*, b1.title as offered_book_title, b1.image_url as offered_book_img, b2.title as requested_book_title, u.full_name as sender_name FROM offers JOIN books b1 ON offers.offered_book_id = b1.id JOIN books b2 ON offers.requested_book_id = b2.id JOIN users u ON offers.sender_id = u.id WHERE offers.receiver_id = ? ORDER BY offers.created_at DESC";
+$stmtInc = $conn->prepare($sqlIncoming);
+$stmtInc->execute([$user_id]);
+$incomingOffers = $stmtInc->fetchAll(PDO::FETCH_ASSOC);
+
+$sqlOutgoing = "SELECT offers.*, b1.title as offered_book_title, b2.title as requested_book_title, b2.image_url as requested_book_img, u.full_name as receiver_name FROM offers JOIN books b1 ON offers.offered_book_id = b1.id JOIN books b2 ON offers.requested_book_id = b2.id JOIN users u ON offers.receiver_id = u.id WHERE offers.sender_id = ? ORDER BY offers.created_at DESC";
+$stmtOut = $conn->prepare($sqlOutgoing);
+$stmtOut->execute([$user_id]);
+$outgoingOffers = $stmtOut->fetchAll(PDO::FETCH_ASSOC);
+
 $bookCount = count($myBooks);
 ?>
 
@@ -25,54 +52,74 @@ $bookCount = count($myBooks);
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profilim - Kitap Takas</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; min-height: 100vh; display: flex; flex-direction: column; font-family: 'Segoe UI', sans-serif; }
-        .main-content { flex: 1; padding-top: 20px; }
-        footer { margin-top: auto; }
-        .navbar { background-color: #fff !important; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .navbar-brand { font-weight: 700; font-size: 1.5rem; color: #0d6efd !important; display: flex; align-items: center; }
-        .nav-icon-btn { color: #6c757d; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
-        .nav-icon-btn:hover { background-color: #f0f2f5; color: #0d6efd; }
-        .profile-header { background-color: #fff; border-radius: 12px; padding: 30px; border: 1px solid #eef0f3; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .profile-pic-wrapper { width: 120px; height: 120px; margin-right: 1.5rem; }
-        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid #f8f9fa; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .add-book-card { border: 2px dashed #dee2e6 !important; background-color: #fff; min-height: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .add-book-card:hover { background-color: #f1f8ff !important; border-color: #0d6efd !important; color: #0d6efd; }
+        :root { --brand-color: #fd7e14; }
+        body { background-color: #f8f9fa; font-family: 'Poppins', sans-serif; padding-top: 80px; }
+        
+        /* Navbar */
+        .navbar { background-color: #fff !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08); height: 70px; }
+        .navbar-brand { color: var(--brand-color) !important; font-weight: 700; font-size: 1.5rem; }
+        .nav-link-custom { color: #333; font-weight: 600; text-decoration: none; transition: 0.2s; display: flex; align-items: center; }
+        .nav-link-custom:hover { color: var(--brand-color); }
+        .btn-logout { background-color: #fff; color: #dc3545; border: 1px solid #dc3545; border-radius: 50px; padding: 5px 20px; font-weight: 600; text-decoration: none; transition: 0.2s; }
+        .btn-logout:hover { background-color: #dc3545; color: #fff; }
+
+        /* Profil Kartı */
+        .profile-header { background: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .profile-pic-wrapper { position: relative; width: 120px; height: 120px; cursor: pointer; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #f1f3f5; }
+        .profile-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s; color: white; }
+        .profile-pic-wrapper:hover .profile-overlay { opacity: 1; }
+
+        /* Sekmeler (Tabs) */
+        .nav-tabs .nav-link { color: #555; font-weight: 500; border: none; border-bottom: 3px solid transparent; }
+        .nav-tabs .nav-link.active { color: var(--brand-color); border-bottom: 3px solid var(--brand-color); background: transparent; font-weight: 600; }
+        .nav-tabs { border-bottom: 1px solid #dee2e6; }
+
+        /* Kartlar */
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .offer-img { width: 60px; height: 80px; object-fit: cover; border-radius: 5px; }
+
+        /* Yeni Kitap Ekle Buton Kartı */
+        .add-book-card { border: 2px dashed #dee2e6 !important; background-color: #fff; display: flex; align-items: center; justify-content: center; min-height: 100%; text-decoration: none; transition: 0.2s; }
+        .add-book-card:hover { border-color: var(--brand-color) !important; color: var(--brand-color) !important; background-color: #fff5f0; }
+        .text-brand { color: var(--brand-color); }
     </style>
 </head>
 <body>
  
-    <nav class="navbar mb-4 sticky-top">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a class="navbar-brand" href="index.php"><i class="fas fa-book-open me-2"></i>Kitap Takas</a>
-            <div class="d-flex align-items-center gap-2">
-                <a href="index.php" class="nav-icon-btn" title="Ana Sayfa"><i class="fas fa-home fa-lg"></i></a>
-                <div class="vr mx-2 text-secondary"></div>
-                <a href="logout.php" class="nav-icon-btn text-danger" title="Güvenli Çıkış"><i class="fas fa-sign-out-alt fa-lg"></i></a>
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.php"><i class="fas fa-book-reader me-2"></i>Kitap Takas</a>
+            <div class="d-flex align-items-center ms-auto gap-3">
+                <a href="index.php" class="nav-link-custom"><i class="fas fa-home fa-lg"></i></a>
+                <a href="logout.php" class="btn-logout"><i class="fas fa-sign-out-alt me-1"></i> Çıkış</a>
             </div>
         </div>
     </nav>
  
-    <div class="container main-content">
-        
-        <div class="row justify-content-center mb-4">
-            <div class="col-md-8">
-                <div class="profile-header d-flex align-items-center shadow-sm">
-                    <div class="profile-pic-wrapper">
-                        <img src="https://via.placeholder.com/150?text=Profil" class="avatar-img">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="profile-header d-flex align-items-center">
+                    <div class="me-4">
+                        <form action="upload_profile.php" method="POST" enctype="multipart/form-data" id="profileForm">
+                            <div class="profile-pic-wrapper" onclick="document.getElementById('fileInput').click()">
+                                <img src="<?php echo $profilePic; ?>" class="avatar-img">
+                                <div class="profile-overlay"><i class="fas fa-camera fa-2x"></i></div>
+                            </div>
+                            <input type="file" name="profile_pic" id="fileInput" style="display: none;" onchange="document.getElementById('profileForm').submit()">
+                        </form>
                     </div>
-                    <div class="flex-grow-1">
-                        <h2 class="mb-0 me-3"><?php echo htmlspecialchars($full_name); ?></h2>
+                    <div>
+                        <h2 class="mb-0 fw-bold text-dark"><?php echo htmlspecialchars($full_name); ?></h2>
                         <p class="text-muted mb-2">Kitap Sever</p>
-                        <div class="d-flex gap-3 mt-2">
-                            <span class="badge bg-primary p-2"><i class="fas fa-book me-1"></i> <span id="kitapSayisi"><?php echo $bookCount; ?></span> Kitap</span>
-                        </div>
+                        <span class="badge bg-warning text-dark p-2 rounded-pill"><i class="fas fa-book me-1"></i> <?php echo $bookCount; ?> Kitap</span>
                     </div>
                 </div>
             </div>
@@ -80,107 +127,119 @@ $bookCount = count($myBooks);
  
         <div class="row justify-content-center">
             <div class="col-md-10">
-                <ul class="nav nav-tabs mb-4">
-                    <li class="nav-item"><button class="nav-link active">Kitaplarım</button></li>
+                <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#books">Kitaplarım</button></li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#incoming">
+                            Gelen Teklifler
+                            <?php if ($newOfferCount > 0): ?>
+                                <span class="badge bg-danger rounded-pill ms-1"><?php echo $newOfferCount; ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#outgoing">Giden Teklifler</button></li>
                 </ul>
  
                 <div class="tab-content">
-                    <div class="tab-pane fade show active">
+                    
+                    <div class="tab-pane fade show active" id="books">
                         <div class="row">
-                            
                             <?php foreach ($myBooks as $book): ?>
                             <div class="col-md-4 mb-4">
-                                <div class="card h-100 shadow-sm border-start border-primary border-4">
-                                    <div class="card-body d-flex flex-column">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <div class="d-flex align-items-center">
-                                                <span class="status-dot bg-success me-2" style="width:10px; height:10px; border-radius:50%; display:inline-block;"></span>
-                                                <h5 class="card-title mb-0"><?php echo htmlspecialchars($book['title']); ?></h5>
-                                            </div>
-                                            <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($book['book_condition']); ?></span>
-                                        </div>
-                                        <p class="text-muted small mb-3">
-                                            <i class="fas fa-pen-nib me-1"></i><?php echo htmlspecialchars($book['author']); ?>
-                                        </p>
-                                        <div class="d-flex gap-2 mt-auto">
-                                            <button class="btn btn-outline-secondary btn-sm flex-grow-1" disabled>Düzenle</button>
-                                            <button class="btn btn-outline-danger btn-sm" disabled>Sil</button>
-                                        </div>
+                                <div class="card h-100 p-3">
+                                    <h5 class="card-title text-dark"><?php echo htmlspecialchars($book['title']); ?></h5>
+                                    <p class="text-muted small"><?php echo htmlspecialchars($book['author']); ?></p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <span class="badge bg-light text-dark border"><?php echo htmlspecialchars($book['book_condition']); ?></span>
+                                        <a href="deleteBook.php?id=<?php echo $book['id']; ?>" class="btn btn-outline-danger btn-sm rounded-pill" onclick="return confirm('Silmek istediğine emin misin?');">
+                                            <i class="fas fa-trash-alt"></i> Sil
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                             <?php endforeach; ?>
-
+                            
                             <div class="col-md-4 mb-4">
-                                <div class="card h-100 shadow-sm border-2 add-book-card d-flex align-items-center justify-content-center bg-light"
-                                     data-bs-toggle="modal" data-bs-target="#addBookModal">
-                                    <div class="text-center p-3 text-muted">
+                                <a href="addBook.php" class="card add-book-card h-100 p-4">
+                                    <div class="text-center text-muted">
                                         <i class="fas fa-plus-circle fa-3x mb-2"></i>
-                                        <h6 class="mb-0">Yeni Kitap Ekle</h6>
+                                        <h6 class="mb-0 fw-bold">Yeni Kitap Ekle</h6>
                                     </div>
-                                </div>
+                                </a>
                             </div>
- 
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
- 
-    <footer class="bg-dark text-white text-center py-3 mt-5"><div class="container"><p class="mb-0">© 2024 Kitap Takas Platformu</p></div></footer>
- 
-    <div class="modal fade" id="addBookModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered"> 
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <h4 class="modal-title text-primary fw-bold">Yeni Kitap İlanı</h4>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                
-                <form action="addBook.php" method="POST" enctype="multipart/form-data">
-                    <div class="modal-body p-4">
-                        <div class="row">
-                            <div class="col-lg-4 mb-4 mb-lg-0">
-                                <label class="form-label fw-bold">Kitap Kapağı</label>
-                                <input type="file" class="form-control" name="image" accept="image/*">
-                            </div>
- 
-                            <div class="col-lg-8">
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Kitap Adı *</label>
-                                    <input type="text" class="form-control" name="title" required>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Yazar *</label>
-                                        <input type="text" class="form-control" name="author" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-bold">Kondisyon *</label>
-                                        <select class="form-select" name="book_condition" required>
-                                            <option>Yeni Gibi</option>
-                                            <option>Çok İyi</option>
-                                            <option>İdare Eder</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <input type="hidden" name="publisher" value="-">
-                                <input type="hidden" name="category" value="Diğer">
 
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Açıklama</label>
-                                    <textarea class="form-control" name="description" rows="4"></textarea>
+                    <div class="tab-pane fade" id="incoming">
+                        <?php if(count($incomingOffers) > 0): ?>
+                            <?php foreach($incomingOffers as $offer): ?>
+                                <div class="card mb-3 p-3 border-start border-4 <?php echo ($offer['status'] == 'pending') ? 'border-warning' : (($offer['status'] == 'accepted') ? 'border-success' : 'border-danger'); ?>">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3 text-center">
+                                                <small class="d-block text-muted" style="font-size: 10px;">VERİLEN</small>
+                                                <?php $img = (!empty($offer['offered_book_img']) && file_exists($offer['offered_book_img'])) ? $offer['offered_book_img'] : 'https://via.placeholder.com/60?text=Kitap'; ?>
+                                                <img src="<?php echo htmlspecialchars($img); ?>" class="offer-img">
+                                            </div>
+                                            <div class="me-3"><i class="fas fa-exchange-alt fa-lg text-muted"></i></div>
+                                            <div class="me-3 text-center">
+                                                <small class="d-block text-muted" style="font-size: 10px;">İSTENEN</small>
+                                                <strong><?php echo htmlspecialchars($offer['requested_book_title']); ?></strong>
+                                            </div>
+                                            <div class="ms-3 ps-3 border-start">
+                                                <h6 class="mb-1 text-brand"><?php echo htmlspecialchars($offer['sender_name']); ?></h6>
+                                                <p class="mb-0 small text-muted">"<?php echo htmlspecialchars($offer['message']); ?>"</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <?php if ($offer['status'] == 'pending'): ?>
+                                                <a href="handleOffer.php?id=<?php echo $offer['id']; ?>&action=accept" class="btn btn-success btn-sm rounded-pill me-1"><i class="fas fa-check"></i> Kabul</a>
+                                                <a href="handleOffer.php?id=<?php echo $offer['id']; ?>&action=reject" class="btn btn-danger btn-sm rounded-pill"><i class="fas fa-times"></i> Reddet</a>
+                                            <?php elseif ($offer['status'] == 'accepted'): ?>
+                                                <span class="badge bg-success rounded-pill">Kabul Edildi</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger rounded-pill">Reddedildi</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Vazgeç</button>
-                                    <button type="submit" class="btn btn-success px-5">Yayınla</button>
-                                </div>
-                            </div>
-                        </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="alert alert-light text-center">Henüz gelen bir teklif yok.</div>
+                        <?php endif; ?>
                     </div>
-                </form>
+
+                    <div class="tab-pane fade" id="outgoing">
+                        <?php if(count($outgoingOffers) > 0): ?>
+                            <?php foreach($outgoingOffers as $offer): ?>
+                                <div class="card mb-3 p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <?php $img = (!empty($offer['requested_book_img']) && file_exists($offer['requested_book_img'])) ? $offer['requested_book_img'] : 'https://via.placeholder.com/60?text=Kitap'; ?>
+                                            <img src="<?php echo htmlspecialchars($img); ?>" class="offer-img">
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">İstediğin: <?php echo htmlspecialchars($offer['requested_book_title']); ?></h6>
+                                            <p class="mb-1 small">Teklif Ettiğin: <strong><?php echo htmlspecialchars($offer['offered_book_title']); ?></strong></p>
+                                            <p class="mb-0 small text-muted">Kime: <?php echo htmlspecialchars($offer['receiver_name']); ?></p>
+                                        </div>
+                                        <div class="ms-auto">
+                                            <?php if ($offer['status'] == 'pending'): ?>
+                                                <span class="badge bg-warning text-dark rounded-pill">Beklemede</span>
+                                            <?php elseif ($offer['status'] == 'accepted'): ?>
+                                                <span class="badge bg-success rounded-pill">Kabul Edildi</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger rounded-pill">Reddedildi</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="alert alert-light text-center">Henüz yaptığın bir teklif yok.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
