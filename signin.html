@@ -79,7 +79,7 @@
  
                 <div class="card-body p-4">
                     
-                    <form id="registerForm" novalidate>
+                    <form action="register.php" method="POST">
                         
                         <div class="mb-3">
                             <label for="idAdSoyad" class="form-label text-muted small fw-bold">AD SOYAD *</label>
@@ -174,7 +174,7 @@
  
         // 2. Kayıt Olma Simülasyonu ve Şifre Kontrolü
         registerForm.addEventListener('submit', function(e) {
-            e.preventDefault(); // Sayfa yenilenmesini engelle
+            /*e.preventDefault();*/ // Sayfa yenilenmesini engelle
             
             // 2.1. Bootstrap'in Zorunlu Alan Kontrolünü Tetikle
             if (!this.checkValidity()) {

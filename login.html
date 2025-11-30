@@ -34,13 +34,13 @@
                 </div>
                 <div class="card-body p-4">
                     
-                    <form id="loginForm">
+                    <form action="login.php" method="POST">
                         
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">KULLANICI ADI</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="fas fa-user text-primary"></i></span>
-                                <input type="text" class="form-control" id="txtKullanici" required>
+                                <input type="text" class="form-control" id="txtKullanici" name="username" required>
                             </div>
                         </div>
  
@@ -48,7 +48,7 @@
                             <label class="form-label small fw-bold text-muted">ŞİFRE</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="fas fa-lock text-primary"></i></span>
-                                <input type="password" class="form-control" id="txtSifre" required>
+                                <input type="password" class="form-control" id="txtSifre" name="password" required>
                                 <span class="input-group-text bg-white password-toggle" onclick="sifreGoster()">
                                     <i class="fas fa-eye" id="eyeIcon"></i>
                                 </span>
