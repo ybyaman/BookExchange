@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesajlar - Kitap Takas</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+ 
+    <style>
+        /* --- GENEL DÜZEN --- */
+        body {
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+ 
+        .navbar { flex-shrink: 0; }
+ 
+        .main-content {
+            flex-grow: 1;
+            padding: 20px 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+        }
+ 
+        .chat-container {
+            width: 90%;
+            max-width: 1200px;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            height: 100%;
+        }
+ 
+        /* --- SOL MENÜ (KİŞİ LİSTESİ) --- */
+        .users-list {
+            width: 350px;
+            border-right: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+        }
+ 
+        /* Arama ve Geri Butonu Alanı */
+        .search-header {
+            padding: 15px;
+            border-bottom: 1px solid #f1f1f1;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Buton ve input arası boşluk */
+        }
+ 
+        /* Geri Dön Butonu Stili */
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* Yuvarlak */
+            border: 1px solid #dee2e6;
+            background: #fff;
+            color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .back-btn:hover {
+            background-color: #f0f2f5;
+            color: #0d6efd; /* Hover olunca mavi */
+            border-color: #0d6efd;
+        }
+ 
+        .user-scroll-area {
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+ 
+        .user-item {
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f1f1f1;
+            position: relative;
+            height: 80px; /* Sabit yükseklik verelim ki zıplama olmasın */
+        }
+        .user-item:hover { background-color: #f8f9fa; }
+        .user-item.active { background-color: #e7f1ff; border-left: 4px solid #0d6efd; }
+        
+        /* SAAT BİLGİSİ */
+        .chat-time-info {
+            font-size: 0.75rem;
+            color: #6c757d;
+            transition: opacity 0.2s; /* Yavaşça kaybolsun */
+        }
+ 
+        /* ÇÖP KUTUSU (SİLME BUTONU) */
+        .delete-chat-btn {
+            position: absolute;
+            right: 15px;
+            top: 20px; /* Üstten hizalama */
+            color: #dc3545;
+            background: #fff;
+            border: 1px solid #dc3545;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: none; /* Başlangıçta gizli */
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .delete-chat-btn:hover { background: #dc3545; color: #fff; }
+ 
+        /* --- KRİTİK CSS KURALI --- */
+        /* Mouse üzerine gelince (.user-item:hover): */
+        /* 1. Saat gizlensin */
+        .user-item:hover .chat-time-info { display: none; }
+        /* 2. Çöp kutusu görünsün */
+        .user-item:hover .delete-chat-btn { display: flex; }
+ 
+ 
+        .avatar-img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+ 
+        /* --- SAĞ TARAF (SOHBET PENCERESİ) --- */
+        .chat-window {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #e5ddd5;
+            position: relative;
+        }
+ 
+        .chat-header {
+            background-color: #fff;
+            padding: 10px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+ 
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+ 
+        .security-alert {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border: 1px solid #ffeeba;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+ 
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            position: relative;
+            font-size: 0.95rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            line-height: 1.4;
+        }
+        .message-received { background-color: #ffffff; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .message-sent { background-color: #d9fdd3; align-self: flex-end; border-bottom-right-radius: 2px; }
+ 
+        .message-time { font-size: 0.7rem; color: #999; float: right; margin-left: 10px; margin-top: 5px; }
+        .msg-status { font-size: 0.7rem; margin-left: 3px; color: #53bdeb; }
+ 
+        .typing-indicator {
+            background-color: #ffffff;
+            padding: 10px 15px;
+            border-radius: 15px;
+            border-bottom-left-radius: 2px;
+            width: fit-content;
+            margin-bottom: 10px;
+            display: none;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            align-self: flex-start;
+        }
+ 
+        .dot { width: 8px; height: 8px; margin: 0 2px; background-color: #90949c; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+ 
+        .chat-input-area {
+            background-color: #f0f2f5;
+            padding: 15px;
+            border-top: 1px solid #dee2e6;
+            flex-shrink: 0;
+        }
+ 
+        @media (max-width: 768px) {
+            .users-list { display: none; width: 100%; }
+            .users-list.active { display: flex; }
+            .chat-window { display: flex; }
+            .chat-window.hidden { display: none; }
+            .chat-container { width: 100%; height: 100%; border-radius: 0; }
+            .main-content { padding: 0; }
+            .search-header { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+ 
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="fas fa-book-open me-2"></i>Kitap Takas</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-end mt-2">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Ana Sayfa</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Kitap Ekle</a></li>
+                    <li class="nav-item"><a class="nav-link" href="profil.html">Profilim</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="mesajlar.html">Mesajlar</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+ 
+    <div class="main-content">
+        <div class="chat-container">
+            
+            <div class="users-list d-none d-md-flex col-md-4">
+                
+                <div class="search-header">
+                    <a href="profile.html" class="back-btn" title="Profile Dön">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <input type="text" id="searchInput" class="form-control rounded-pill" placeholder="Sohbet ara...">
+                </div>
+                
+                <div class="user-scroll-area" id="usersContainer">
+                    <div class="user-item p-3 active d-flex align-items-center">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="avatar-img me-3" alt="User">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-0 text-truncate userName">Ahmet Yılmaz</h6>
+                                <small class="chat-time-info">14:30</small>
+                                <button class="delete-chat-btn" title="Sohbeti Sil"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <small class="text-muted text-truncate d-block mt-1">Tamamdır, yarın okulda görüşürüz.</small>
+                        </div>
+                    </div>
+ 
+                    <div class="user-item p-3 d-flex align-items-center">
+                        <img src="https://randomuser.me/api/portraits/women/44.jpg" class="avatar-img me-3" alt="User">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-0 text-truncate userName">Zeynep Kaya</h6>
+                                <small class="chat-time-info">Dün</small>
+                                <button class="delete-chat-btn" title="Sohbeti Sil"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <small class="text-muted text-truncate d-block mt-1">Kargo kodunu gönderdim.</small>
+                        </div>
+                    </div>
+ 
+                    <div class="user-item p-3 d-flex align-items-center">
+                        <img src="https://randomuser.me/api/portraits/men/85.jpg" class="avatar-img me-3" alt="User">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mb-0 text-truncate userName">Mehmet Demir</h6>
+                                <small class="chat-time-info">Pzt</small>
+                                <button class="delete-chat-btn" title="Sohbeti Sil"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <small class="text-muted text-truncate d-block mt-1">Kitap hala duruyor mu?</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+ 
+            <div class="chat-window col-md-8 col-12">
+                
+                <div class="chat-header">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-link text-dark d-md-none me-2"><i class="fas fa-arrow-left"></i></button>
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="avatar-img me-2" id="header-img" alt="Avatar">
+                        <div>
+                            <h6 class="mb-0" id="header-name">Ahmet Yılmaz</h6>
+                            <small class="text-success"><i class="fas fa-circle fa-xs me-1"></i>Çevrimiçi</small>
+                        </div>
+                    </div>
+                    <div class="badge bg-light text-dark border">
+                        <i class="fas fa-book me-1"></i> Konu: Simyacı
+                    </div>
+                </div>
+ 
+                <div class="chat-messages" id="chatMessages">
+                    <div class="security-alert shadow-sm">
+                        <i class="fas fa-shield-alt"></i>
+                        <strong>Dikkat:</strong> Güvenliğiniz için lütfen telefon numarası, adres veya kart bilgilerinizi sohbet üzerinden paylaşmayın.
+                    </div>
+ 
+                    <div class="message-bubble message-received">
+                        Merhaba, Simyacı kitabı için takas teklifimi kabul ettiğin için teşekkürler!
+                        <span class="message-time">14:25</span>
+                    </div>
+ 
+                    <div class="message-bubble message-sent">
+                        Rica ederim, ben de senin önerdiğin kitabı okumak istiyordum. Nasıl yapalım değişimi?
+                        <div>
+                            <span class="message-time">14:26 <i class="fas fa-check-double msg-status"></i></span>
+                        </div>
+                    </div>
+ 
+                    <div class="message-bubble message-received">
+                        Yarın okuldaysan kantinde buluşabiliriz. 12:00 uygun mu?
+                        <span class="message-time">14:28</span>
+                    </div>
+ 
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                    </div>
+                </div>
+ 
+                <div class="chat-input-area">
+                    <div class="input-group">
+                        <button class="btn btn-light border" type="button"><i class="fas fa-paperclip text-muted"></i></button>
+                        <input type="text" class="form-control" id="messageInput" placeholder="Bir mesaj yazın...">
+                        <button class="btn btn-primary" type="button" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+ 
+    <script>
+        const mesajKutusu = document.getElementById('messageInput');
+        const gonderButonu = document.getElementById('sendBtn');
+        const sohbetAlani = document.getElementById('chatMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const headerName = document.getElementById('header-name');
+        const headerImg = document.getElementById('header-img');
+        const searchInput = document.getElementById('searchInput'); // Arama kutusu
+ 
+        const cevaplar = ["Tamamdır, anlaştık!", "Kitabın kondisyonu nasıl?", "Yarın kütüphanede buluşabilir miyiz?", "Teşekkür ederim, görüşmek üzere.", "Fotoğraf atabilir misin?"];
+ 
+        // 1. ARAMA FONKSİYONU (YENİ EKLENDİ)
+        searchInput.addEventListener('input', function(e) {
+            const arananKelime = e.target.value.toLowerCase();
+            const kullanicilar = document.querySelectorAll('.user-item');
+ 
+            kullanicilar.forEach(kisi => {
+                const isim = kisi.querySelector('.userName').innerText.toLowerCase();
+                if (isim.includes(arananKelime)) {
+                    kisi.style.display = 'flex'; // Eşleşiyorsa göster
+                } else {
+                    kisi.style.display = 'none'; // Eşleşmiyorsa gizle
+                }
+            });
+        });
+ 
+        // Mesaj Gönderme
+        function mesajGonder() {
+            const mesajMetni = mesajKutusu.value.trim();
+            if (mesajMetni !== "") {
+                const simdi = new Date();
+                const saat = simdi.getHours().toString().padStart(2, '0') + ":" + simdi.getMinutes().toString().padStart(2, '0');
+                const yeniMesajHTML = `<div class="message-bubble message-sent">${mesajMetni}<div><span class="message-time">${saat} <i class="fas fa-check-double msg-status"></i></span></div></div>`;
+                typingIndicator.insertAdjacentHTML('beforebegin', yeniMesajHTML);
+                mesajKutusu.value = "";
+                scrollToBottom();
+                karsiTarafCevapVer();
+            }
+        }
+ 
+        function karsiTarafCevapVer() {
+            setTimeout(() => {
+                typingIndicator.style.display = 'flex';
+                scrollToBottom();
+                setTimeout(() => {
+                    typingIndicator.style.display = 'none';
+                    const rastgeleCevap = cevaplar[Math.floor(Math.random() * cevaplar.length)];
+                    const simdi = new Date();
+                    const saat = simdi.getHours().toString().padStart(2, '0') + ":" + simdi.getMinutes().toString().padStart(2, '0');
+                    const cevapHTML = `<div class="message-bubble message-received">${rastgeleCevap}<span class="message-time">${saat}</span></div>`;
+                    typingIndicator.insertAdjacentHTML('beforebegin', cevapHTML);
+                    scrollToBottom();
+                }, 2000);
+            }, 600);
+        }
+ 
+        function scrollToBottom() { sohbetAlani.scrollTop = sohbetAlani.scrollHeight; }
+ 
+        // Kullanıcı Seçimi ve Silme Butonu Mantığı
+        // Önemli Not: Dinamik seçim için Event Delegation kullanmıyoruz çünkü liste sabit, ama silme için dikkatli olmalıyız.
+        const userItems = document.querySelectorAll('.user-item');
+        
+        userItems.forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Eğer tıklanan yer silme butonu ise, seçme işlemini yapma!
+                if (e.target.closest('.delete-chat-btn')) return;
+ 
+                userItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                headerName.innerText = this.querySelector('.userName').innerText;
+                headerImg.src = this.querySelector('img').src;
+            });
+ 
+            // Silme Butonu İşlevi
+            const deleteBtn = item.querySelector('.delete-chat-btn');
+            deleteBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // Tıklamanın yukarı (item select) gitmesini engelle
+                if(confirm('Sohbeti silmek istediğinize emin misiniz?')) {
+                    item.remove();
+                    if(item.classList.contains('active')) headerName.innerText = "Sohbet Seçiniz";
+                }
+            });
+        });
+ 
+        gonderButonu.addEventListener('click', mesajGonder);
+        mesajKutusu.addEventListener('keypress', function (e) { if (e.key === 'Enter') mesajGonder(); });
+        window.onload = scrollToBottom;
+    </script>
+</body>
+</html>

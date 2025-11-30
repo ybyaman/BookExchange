@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitap Ekle - Kitap Takas</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+ 
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+ 
+        .main-content {
+            flex: 1;
+            padding-bottom: 40px;
+        }
+ 
+        /* Fotoğraf Yükleme Alanı */
+        .image-upload-container {
+            position: relative;
+            width: 100%;
+            height: 450px; /* Kitap boyutu */
+            background-color: #e9ecef;
+            border: 2px dashed #ced4da;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+ 
+        .image-upload-container:hover {
+            border-color: #01122b;
+            background-color: #dee2e6;
+        }
+ 
+        .upload-placeholder {
+            text-align: center;
+            color: #6c757d;
+        }
+ 
+        /* Yüklenen resim önizlemesi */
+        #previewImage {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* Başlangıçta gizli */
+        }
+ 
+        /* Resmi değiştir butonu (Resim yüklendikten sonra çıkar) */
+        .change-image-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+ 
+    <nav class="navbar navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="fas fa-book-open me-2"></i>Kitap Takas</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-end mt-2">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Ana Sayfa</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="#">Kitap Ekle</a></li>
+                    <li class="nav-item"><a class="nav-link" href="profil.html">Profilim</a></li>
+                    <li class="nav-item"><a class="nav-link" href="mesajlar.html">Mesajlar</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+ 
+    <div class="container main-content">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0 text-primary"><i class="fas fa-plus-circle me-2"></i>Yeni Kitap İlanı Oluştur</h4>
+                    </div>
+                    
+                    <div class="card-body p-4">
+                        <form id="addBookForm" class="needs-validation" novalidate>
+                            <div class="row">
+                                
+                                <div class="col-md-4 mb-4 mb-md-0">
+                                    <label class="form-label fw-bold">Kitap Kapağı *</label>
+                                    
+                                    <div class="image-upload-container" onclick="document.getElementById('bookImageInput').click()">
+                                        
+                                        <div class="upload-placeholder" id="uploadPlaceholder">
+                                            <i class="fas fa-camera fa-3x mb-3"></i>
+                                            <p class="mb-0 fw-bold">Fotoğraf Yükle</p>
+                                            <small>veya sürükle bırak</small>
+                                        </div>
+ 
+                                        <img id="previewImage" src="#" alt="Kitap Önizleme">
+                                        
+                                        <button type="button" class="btn btn-sm btn-light shadow change-image-btn" id="changeBtn">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <input type="file" id="bookImageInput" class="d-none" accept="image/*" required>
+                                    <div class="invalid-feedback d-block mt-2" id="imageError" style="display:none !important;">
+                                        Lütfen bir kapak fotoğrafı yükleyin.
+                                    </div>
+                                </div>
+ 
+                                <div class="col-md-8">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Kitap Adı *</label>
+                                        <input type="text" class="form-control form-control-lg" placeholder="Örn: Sefiller" required>
+                                    </div>
+ 
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Yazar *</label>
+                                            <input type="text" class="form-control" placeholder="Örn: Victor Hugo" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Yayınevi</label>
+                                            <input type="text" class="form-control" placeholder="Örn: İş Bankası Yayınları">
+                                        </div>
+                                    </div>
+ 
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Kategori *</label>
+                                            <select class="form-select" required>
+                                                <option value="" selected disabled>Seçiniz...</option>
+                                                <option>Edebiyat / Roman</option>
+                                                <option>Bilim Kurgu</option>
+                                                <option>Kişisel Gelişim</option>
+                                                <option>Ders Kitabı / Akademik</option>
+                                                <option>Tarih</option>
+                                                <option>Çizgi Roman</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label fw-bold">Kondisyon (Durum) *</label>
+                                            <select class="form-select" required>
+                                                <option value="" selected disabled>Seçiniz...</option>
+                                                <option>Yeni Gibi (Hiç okunmamış)</option>
+                                                <option>Çok İyi (Temiz kullanılmış)</option>
+                                                <option>İyi (Okunabilir, yıpranma yok)</option>
+                                                <option>İdare Eder (Çizikler var)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+ 
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold">Açıklama / Notlar</label>
+                                        <textarea class="form-control" rows="5" placeholder="Kitap hakkında eklemek istediklerin... (Örn: Sadece ilk sayfada ismim yazılı, onun dışında tertemiz.)"></textarea>
+                                    </div>
+ 
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <a href="index.html" class="btn btn-outline-secondary px-4">Vazgeç</a>
+                                        <button type="submit" class="btn btn-success btn-lg px-5"><i class="fas fa-check me-2"></i>İlanı Yayınla</button>
+                                    </div>
+ 
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+ 
+            </div>
+        </div>
+    </div>
+ 
+    <footer class="bg-dark text-white text-center py-3">
+        <div class="container">
+            <p class="mb-0">© 2024 Okul Projesi - Kitap Takas Platformu</p>
+        </div>
+    </footer>
+ 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ 
+    <script>
+        // 1. FOTOĞRAF ÖNİZLEME MANTIĞI
+        const imageInput = document.getElementById('bookImageInput');
+        const previewImage = document.getElementById('previewImage');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const changeBtn = document.getElementById('changeBtn');
+ 
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    
+                    // Görünürlük ayarları
+                    previewImage.style.display = "block";
+                    placeholder.style.display = "none";
+                    changeBtn.style.display = "block";
+                    
+                    // Hata mesajını gizle
+                    document.getElementById('imageError').style.display = 'none';
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+ 
+        // 2. FORM GÖNDERME VE DOĞRULAMA
+        const form = document.getElementById('addBookForm');
+ 
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+ 
+            // Resim yüklenmiş mi kontrol et
+            if (imageInput.files.length === 0) {
+                document.getElementById('imageError').style.display = 'block';
+                return; // Durdur
+            }
+ 
+            // Diğer alanlar dolu mu kontrol et (Bootstrap Validation)
+            if (!this.checkValidity()) {
+                e.stopPropagation();
+                this.classList.add('was-validated');
+                return;
+            }
+ 
+            // Her şey tamamsa BAŞARI MESAJI (SweetAlert ile)
+            Swal.fire({
+                title: 'Harika!',
+                text: 'Kitabın başarıyla ilana eklendi.',
+                icon: 'success',
+                confirmButtonText: 'Tamam',
+                confirmButtonColor: '#198754'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Profil sayfasına yönlendir (Kitap oraya düşmüş gibi)
+                    window.location.href = "profil.html";
+                }
+            });
+        });
+    </script>
+ 
+</body>
+</html>
