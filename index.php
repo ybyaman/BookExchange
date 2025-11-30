@@ -1,12 +1,12 @@
 <?php
 session_start();
-include 'db.php'; // Veritabanı bağlantısı
+include 'db.php';
 
-// Kitapları ve ekleyen kullanıcı adını çeken sorgu
-$sql = "SELECT Books.*, Users.full_name, Users.username 
-        FROM Books 
-        JOIN Users ON Books.user_id = Users.id 
-        ORDER BY Books.created_at DESC";
+// Tablo adları 'books' ve 'users' olarak küçültüldü
+$sql = "SELECT books.*, users.full_name, users.username 
+        FROM books 
+        JOIN users ON books.user_id = users.id 
+        ORDER BY books.created_at DESC";
 
 try {
     $stmt = $conn->query($sql);
@@ -15,7 +15,6 @@ try {
     die("Veri çekme hatası: " . $e->getMessage());
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -24,7 +23,7 @@ try {
     <title>Ana Sayfa - Kitap Takas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .card-img-top { height: 250px; object-fit: cover; } /* Resim boyutlarını sabitle */
+        .card-img-top { height: 250px; object-fit: cover; }
     </style>
 </head>
 <body>
@@ -39,7 +38,7 @@ try {
                 <ul class="navbar-nav ms-auto">
                     <?php if(isset($_SESSION['user_id'])): ?>
                         <li class="nav-item"><a class="nav-link" href="addBook.html">➕ Kitap Ekle</a></li>
-                        <li class="nav-item"><a class="nav-link" href="profile.php">👤 Profilim</a></li>
+                        <li class="nav-item"><a class="nav-link" href="profile.html">👤 Profilim</a></li>
                         <li class="nav-item"><a class="nav-link btn btn-danger text-white ms-2" href="logout.php">Çıkış Yap</a></li>
                     <?php else: ?>
                         <li class="nav-item"><a class="nav-link" href="login.html">Giriş Yap</a></li>

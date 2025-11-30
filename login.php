@@ -7,7 +7,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kullanici = $_POST['username'];
     $sifre = $_POST['password'];
 
-    $sql = "SELECT * FROM Users WHERE username = ?";
+    // Tablo adı 'Users' yerine 'users' yapıldı
+    $sql = "SELECT * FROM users WHERE username = ?";
     
     try {
         $stmt = $conn->prepare($sql);
@@ -15,11 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($sifre, $user['password_hash'])) {
-            // Giriş Başarılı: Bilgileri oturuma kaydet
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['full_name'];
-            
-            // Profil sayfasına yönlendir
             header("Location: profile.html"); 
             exit();
         } else {
