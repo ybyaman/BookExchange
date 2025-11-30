@@ -29,14 +29,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // Tablo adı 'Books' yerine 'books' yapıldı
+    // Tablo adı 'books' (küçük harf) olduğundan emin olun
     $sql = "INSERT INTO books (user_id, title, author, publisher, category, book_condition, description, image_url) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
     try {
         $stmt = $conn->prepare($sql);
         $stmt->execute([$user_id, $title, $author, $publisher, $category, $condition, $description, $image_url]);
-        echo "<script>alert('Kitap başarıyla eklendi!'); window.location.href='index.html';</script>";
+        
+        // ÖNEMLİ DEĞİŞİKLİK: index.html yerine index.php'ye yönlendiriyoruz
+        echo "<script>alert('Kitap başarıyla eklendi!'); window.location.href='profile.php';;</script>";
+        
     } catch (PDOException $e) {
         echo "Hata: " . $e->getMessage();
     }

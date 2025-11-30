@@ -23,7 +23,7 @@
             </div>
         </div>
     </nav>
- 
+
     <div class="main-content container">
         <div class="col-md-5 col-lg-4">
             <div class="card login-card">
@@ -34,87 +34,83 @@
                 </div>
                 <div class="card-body p-4">
                     
-                    <form action="login.php" method="POST">
+                    <form id="loginForm" onsubmit="event.preventDefault(); girisYapIslemi();">
                         
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted">KULLANICI ADI</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light"><i class="fas fa-user text-primary"></i></span>
-                                <input type="text" class="form-control" id="txtKullanici" name="username" required>
+                                <input type="text" class="form-control" id="txtKullanici" required>
                             </div>
                         </div>
- 
+
                         <div class="mb-4">
                             <label class="form-label small fw-bold text-muted">ŞİFRE</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-light"><i class="fas fa-lock text-primary"></i></span>
-                                <input type="password" class="form-control" id="txtSifre" name="password" required>
+                                <input type="password" class="form-control" id="txtSifre" required>
                                 <span class="input-group-text bg-white password-toggle" onclick="sifreGoster()">
                                     <i class="fas fa-eye" id="eyeIcon"></i>
                                 </span>
                             </div>
                         </div>
- 
+
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">Giriş Yap</button>
+                            <button type="button" class="btn btn-primary btn-lg shadow-sm" id="btnGiris" onclick="girisYapIslemi()">Giriş Yap</button>
                         </div>
- 
+
                         <div class="text-center mt-3">
                             <a href="signin.html" class="text-decoration-none">Hesabın yok mu? Kayıt Ol</a>
                         </div>
                     </form>
-                    </div>
+
+                </div>
             </div>
         </div>
     </div>
- 
+
     <script>
-        // 1. Şifre Göster/Gizle Fonksiyonu
+        // 1. Şifre Göster/Gizle
         function sifreGoster() {
             const input = document.getElementById('txtSifre');
             const icon = document.getElementById('eyeIcon');
             if (input.type === "password") {
-                input.type = "text";
+                input.type = "text"; 
                 icon.className = "fas fa-eye-slash";
             } else {
-                input.type = "password";
+                input.type = "password"; 
                 icon.className = "fas fa-eye";
             }
         }
- 
-        // 2. GİRİŞ YAPMA MANTIĞI
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            
-            // A. Sayfanın yenilenmesini engelle (Çok Önemli!)
-            e.preventDefault();
-            
-            // B. Değerleri al
+
+        // 2. GİRİŞ İŞLEMİ FONKSİYONU
+        function girisYapIslemi() {
+            // Değerleri al
             const user = document.getElementById('txtKullanici').value;
             const pass = document.getElementById('txtSifre').value;
- 
-            // C. Boş mu diye kontrol et (Gerçi 'required' html'de var ama garanti olsun)
+
+            // Boş mu kontrol et
             if(user.trim() === "" || pass.trim() === "") {
-                alert("Lütfen tüm alanları doldurun.");
+                alert("Lütfen kullanıcı adı ve şifreyi giriniz.");
                 return;
             }
- 
-            // D. Butonu 'Yükleniyor' moduna al
-            const btn = this.querySelector('button');
+
+            // Butonu 'Yükleniyor' yap
+            const btn = document.getElementById('btnGiris');
             const eskiYazi = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Giriş Yapılıyor...';
             btn.disabled = true;
- 
-            // E. Simülasyon (1 saniye bekle ve giriş yap)
+
+            // Giriş simülasyonu
             setTimeout(() => {
-                // Tarayıcı hafızasına kaydet
+                // Bilgileri kaydet
                 localStorage.setItem('girisYapildi', 'true');
                 localStorage.setItem('aktifKullanici', user);
- 
-                // Ana sayfaya yönlendir
-                window.location.href = "index.html";
+
+                // Yönlendir
+                window.location.href = "profile.php"; 
             }, 1000);
-        });
+        }
     </script>
- 
+
 </body>
 </html>
